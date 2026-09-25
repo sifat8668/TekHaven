@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <meta name="theme-color" content="#5080BE" />
   <meta name="description" content="TekHaven online bookstore for Bangladesh" />
-  <title>TekHaven</title>
+ <link rel="icon" type="image/png" href="favicon.png">
+ <title>TekHaven</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root{
@@ -233,7 +234,15 @@ async function performSearch(term){
 
 function renderShell(){
   $('app').innerHTML=`
-    <header class="topbar"><div class="toprow"><div class="brand">TekHaven</div><div class="header-actions"><button class="icon-btn" id="auth-head" aria-label="Account">${state.session?'◉':'○'}</button></div></div>
+    <header class="topbar"><div class="toprow">
+<div class="logo">
+            <a href="index.html">
+                <img src="images/logo.png" alt="TekHaven Logo">
+            </a>
+        </div>
+<div class="brand">
+TekHaven
+</div><div class="header-actions"><button class="icon-btn" id="auth-head" aria-label="Account">${state.session?'◉':'○'}</button></div></div>
       <div class="search-wrap"><input id="search" class="search-input" autocomplete="off" placeholder="Search books, authors, tags, subjects..." value="${esc(state.search)}"><button id="search-clear" class="search-clear">×</button></div>
     </header>
     <main id="main" class="content"></main>
