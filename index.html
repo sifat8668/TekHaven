@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#5080BE" />
+  <meta name="description" content="TekHaven online bookstore for Bangladesh" />
+  <title>TekHaven</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root{
+      --c1:#E0F2FC; --c2:#C6DEF6; --c3:#5080BE; --c4:#7EBBDA; --c5:#E6F5FA;
+      --nav-h:74px; --radius:20px; --shadow:0 12px 32px #C6DEF6;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;background:var(--c5);color:var(--c3);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100%;}
+    body{padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom));overflow-x:hidden}
+    button,input,textarea,select{font:inherit;color:inherit}
+    button,a,input,textarea,select{outline:none!important;-webkit-tap-highlight-color:transparent}
+    button{border:0;background:none;cursor:pointer}
+    img{max-width:100%;display:block}
+    ::selection{background:var(--c4);color:var(--c5)}
+    .app-shell{min-height:100vh}
+    .topbar{position:sticky;top:0;z-index:30;background:var(--c5);backdrop-filter:blur(14px);padding:calc(10px + env(safe-area-inset-top)) 16px 10px;border-bottom:1px solid var(--c2)}
+    .toprow{display:flex;gap:12px;align-items:center;justify-content:space-between;max-width:1100px;margin:auto}
+    .brand{font-weight:900;letter-spacing:-.04em;font-size:22px}
+    .header-actions{display:flex;gap:8px}
+    .icon-btn{width:42px;height:42px;border-radius:14px;background:var(--c1);display:grid;place-items:center;transition:transform .22s ease,background .22s ease}
+    .search-wrap{max-width:1100px;margin:10px auto 0;position:relative}
+    .search-input{width:100%;border:1px solid transparent;background:var(--c1);border-radius:16px;padding:13px 44px 13px 16px;transition:.22s ease}
+    .search-input:focus{border-color:var(--c4);background:var(--c2)}
+    .search-clear{position:absolute;right:8px;top:7px;width:32px;height:32px;border-radius:10px;background:var(--c2);display:none}
+    .content{max-width:1100px;margin:auto;padding:16px}
+    .hero{padding:24px 2px 10px;animation:rise .46s ease both}
+    .hero h1{margin:0;font-size:30px;letter-spacing:-.05em}
+    .hero p{margin:8px 0 0;opacity:.8;line-height:1.45}
+    .section-head{display:flex;align-items:end;justify-content:space-between;gap:12px;margin:20px 0 12px}
+    .section-head h2{margin:0;font-size:18px;letter-spacing:-.02em}
+    .muted{opacity:.72;font-size:13px}
+    .book-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    @media(min-width:720px){.book-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+    .book-card{background:var(--c1);border:1px solid var(--c2);border-radius:18px;overflow:hidden;box-shadow:var(--shadow);transform:translateZ(0);transition:transform .24s ease,box-shadow .24s ease}
+    .book-card:active{transform:scale(.98)}
+    .cover{aspect-ratio:3/4;background:var(--c2);overflow:hidden;position:relative}
+    .cover img{width:100%;height:100%;object-fit:cover;transition:transform .45s ease}
+    .book-card:hover .cover img{transform:scale(1.04)}
+    .cover-fallback{width:100%;height:100%;display:grid;place-items:center;padding:22px;text-align:center;background:linear-gradient(145deg,var(--c2),var(--c1));font-weight:800;font-size:17px}
+    .book-body{padding:11px}
+    .book-title{font-weight:800;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+    .book-meta{font-size:12px;opacity:.72;margin-top:5px;min-height:15px}
+    .book-price{font-weight:900;margin-top:9px;font-size:16px}
+    .pill-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+    .pill{display:inline-flex;padding:5px 8px;border-radius:999px;background:var(--c2);font-size:11px;font-weight:700}
+    .empty{padding:32px 16px;border:1px dashed var(--c4);border-radius:18px;text-align:center;background:var(--c1)}
+    .bottom-nav{position:fixed;z-index:40;bottom:0;left:0;right:0;height:var(--nav-h);padding:7px 10px calc(7px + env(safe-area-inset-bottom));background:var(--c1);border-top:1px solid var(--c2);display:flex;justify-content:center}
+    .nav-inner{width:min(520px,100%);display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+    .nav-btn{position:relative;border-radius:16px;padding:7px 4px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;transition:transform .2s ease,background .2s ease}
+    .nav-btn.active{background:var(--c2)}
+    .nav-icon{font-size:20px;line-height:1}
+    .nav-label{font-size:11px;font-weight:800}
+    .badge{position:absolute;top:5px;right:21%;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--c3);color:var(--c5);font-size:10px;display:grid;place-items:center}
+
+    .page{position:fixed;inset:0;z-index:50;background:var(--c5);transform:translateX(105%);transition:transform .38s cubic-bezier(.22,.78,.2,1);overflow:auto;padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom))}
+    .page.open{transform:translateX(0)}
+    .page-head{position:sticky;top:0;z-index:2;background:var(--c5);padding:calc(11px + env(safe-area-inset-top)) 14px 11px;border-bottom:1px solid var(--c2);display:flex;align-items:center;gap:10px}
+    .page-head h2{font-size:18px;margin:0;flex:1}
+    .close-btn{width:40px;height:40px;border-radius:13px;background:var(--c1);display:grid;place-items:center}
+    .page-body{max-width:900px;margin:auto;padding:16px}
+    .detail-cover{width:min(420px,100%);aspect-ratio:3/4;margin:0 auto;border-radius:22px;overflow:hidden;background:var(--c2);box-shadow:var(--shadow)}
+    .detail-cover img{width:100%;height:100%;object-fit:cover}
+    .detail-title{font-size:28px;line-height:1.05;letter-spacing:-.05em;margin:18px 0 5px}
+    .detail-author{opacity:.78}
+    .price-line{font-size:24px;font-weight:900;margin:15px 0}
+    .cta-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:15px 0 22px}
+    .primary,.secondary{padding:14px 16px;border-radius:16px;font-weight:900;transition:transform .2s ease,background .2s ease}
+    .primary{background:var(--c3);color:var(--c5)}
+    .secondary{background:var(--c2)}
+    .info-card{background:var(--c1);border:1px solid var(--c2);border-radius:18px;padding:14px;margin:12px 0}
+    .info-row{display:grid;grid-template-columns:40% 60%;gap:10px;padding:10px 0;border-bottom:1px solid var(--c2)}
+    .info-row:last-child{border-bottom:0}
+    .info-label{opacity:.68;font-size:13px}.info-val{font-weight:700;word-break:break-word}
+
+    .auth-card{max-width:520px;margin:30px auto;padding:22px;background:var(--c1);border:1px solid var(--c2);border-radius:24px;box-shadow:var(--shadow)}
+    .auth-switch{display:grid;grid-template-columns:1fr 1fr;background:var(--c2);padding:4px;border-radius:14px;margin-bottom:18px}
+    .auth-switch button{padding:10px;border-radius:11px;font-weight:800}.auth-switch .selected{background:var(--c1)}
+    .field{margin:11px 0}.field label{display:block;font-size:12px;font-weight:800;margin-bottom:6px}.field input,.field textarea,.field select{width:100%;background:var(--c5);border:1px solid var(--c2);border-radius:14px;padding:12px}.field textarea{min-height:100px;resize:vertical}
+    .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:520px){.two{grid-template-columns:1fr}}
+    .hidden{display:none!important}
+
+    .cart-item{background:var(--c1);border:1px solid var(--c2);border-radius:18px;padding:12px;display:grid;grid-template-columns:78px 1fr;gap:12px;margin:10px 0;animation:rise .3s ease both}
+    .cart-cover{width:78px;height:105px;border-radius:12px;background:var(--c2);overflow:hidden}.cart-cover img{width:100%;height:100%;object-fit:cover}
+    .qty{display:flex;align-items:center;gap:7px;margin-top:10px}.qty button{width:31px;height:31px;border-radius:10px;background:var(--c2);font-weight:900}.qty span{min-width:22px;text-align:center;font-weight:800}
+    .cart-summary{position:sticky;bottom:0;background:var(--c5);padding:13px 0 16px;border-top:1px solid var(--c2)}
+    .sumrow{display:flex;justify-content:space-between;margin:7px 0}.sumrow.total{font-weight:900;font-size:19px}
+    .notice{background:var(--c2);border-radius:14px;padding:11px;font-size:13px;line-height:1.45;margin:10px 0}
+    .account-head{display:flex;gap:14px;align-items:center;background:var(--c1);padding:17px;border:1px solid var(--c2);border-radius:20px}
+    .avatar{width:58px;height:58px;border-radius:18px;background:var(--c3);color:var(--c5);display:grid;place-items:center;font-size:23px;font-weight:900}
+    .menu-card{background:var(--c1);border:1px solid var(--c2);border-radius:18px;overflow:hidden;margin-top:14px}
+    .menu-item{width:100%;display:flex;align-items:center;justify-content:space-between;padding:15px;border-bottom:1px solid var(--c2);text-align:left}.menu-item:last-child{border-bottom:0}.menu-item:active{background:var(--c2)}
+    .order-card{background:var(--c1);border:1px solid var(--c2);border-radius:18px;padding:14px;margin:10px 0}.order-top{display:flex;justify-content:space-between;gap:10px}.order-status{padding:6px 9px;background:var(--c2);border-radius:999px;font-size:11px;font-weight:900;white-space:nowrap}
+
+    .loader{position:fixed;inset:0;z-index:100;background:var(--c5);display:grid;place-items:center;opacity:1;transition:opacity .25s ease}.loader.hidden{pointer-events:none;opacity:0}
+    .book-loader{width:112px;height:78px;position:relative;perspective:700px}
+    .book-loader:before,.book-loader:after{content:"";position:absolute;top:0;width:54px;height:78px;background:var(--c1);border:2px solid var(--c3);border-radius:6px 2px 2px 6px}
+    .book-loader:before{left:2px;transform-origin:right center;animation:pageLeft 1.05s infinite ease-in-out}
+    .book-loader:after{right:2px;transform-origin:left center;animation:pageRight 1.05s infinite ease-in-out}
+    .loader-spine{position:absolute;z-index:3;left:54px;top:2px;width:4px;height:74px;border-radius:4px;background:var(--c4)}
+    .loader-page{position:absolute;z-index:4;left:55px;top:4px;width:50px;height:70px;border:1px solid var(--c4);border-radius:2px;background:var(--c2);transform-origin:left center;animation:flip 1.05s infinite ease-in-out;box-shadow:0 10px 25px #C6DEF6}
+    @keyframes pageLeft{0%,100%{transform:rotateY(0)}50%{transform:rotateY(-67deg)}}
+    @keyframes pageRight{0%,100%{transform:rotateY(0)}50%{transform:rotateY(67deg)}}
+    @keyframes flip{0%,100%{transform:rotateY(0)}50%{transform:rotateY(155deg)}}
+    @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+    @media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+  </style>
+</head>
+<body>
+<div id="loader" class="loader"><div class="book-loader"><div class="loader-page"></div><div class="loader-spine"></div></div></div>
+<div id="app" class="app-shell"></div>
+
+<script>
+const SUPABASE_URL = 'https://hqkljkzcnxqgxztektni.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_VwyFZRpZJeZ7_EOOX2JrCA_YfFlD1Cv';
+const GEO_URL = 'https://iqbalhasandev.github.io/bangladesh-geo-json/bangladesh-geo.json';
+const { createClient } = window.supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
+});
+
+const state = {
+  page:'home', books:[], pageSize:12, nextOffset:0, loading:false, hasMore:true, search:'',
+  cart:[], session:null, profile:null, settings:null, geo:null, currentBook:null,
+  authMode:'login', authPageOpen:false, searchTimer:null
+};
+
+const $ = (id)=>document.getElementById(id);
+const money = (v)=>`${Number(v||0).toFixed(0)} BDT`;
+const esc = (v='')=>String(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+const slugify = (s)=>String(s).toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+function initials(name){return String(name||'T').split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase()||'T'}
+function cover(book, className=''){return book?.cover_url ? `<img class="${className}" loading="lazy" src="${esc(book.cover_url)}" alt="${esc(book.title)}">` : `<div class="cover-fallback ${className}">${esc(book?.title||'TekHaven')}</div>`}
+function showLoader(){ $('loader').classList.remove('hidden') }
+function hideLoader(){ $('loader').classList.add('hidden') }
+function toast(msg){const el=document.createElement('div');el.textContent=msg;Object.assign(el.style,{position:'fixed',zIndex:120,left:'50%',bottom:'88px',transform:'translateX(-50%)',background:'var(--c3)',color:'var(--c5)',padding:'11px 15px',borderRadius:'13px',fontWeight:'800',fontSize:'13px',boxShadow:'var(--shadow)',maxWidth:'90%',textAlign:'center'});document.body.appendChild(el);setTimeout(()=>el.remove(),2200)}
+function openPage(id){const el=$(id);if(el){el.classList.add('open');}}
+function closePage(id){const el=$(id);if(el){el.classList.remove('open');setTimeout(()=>el.remove(),400)}}
+function publicSettings(){return state.settings||{store_name:'TekHaven',contact_email:'tsntmc1020@gmail.com',cod_enabled:true,bkash_enabled:true,nagad_enabled:true,card_enabled:true,shipping_fee:60,free_shipping_threshold:2000,currency:'BDT',bkash_number:null,nagad_number:null,privacy_policy:'',terms_of_service:''}}
+
+async function boot(){
+  renderShell();
+  const [{data:{session}}, settingsResult] = await Promise.all([
+    sb.auth.getSession(),
+    sb.from('store_settings').select('*').eq('id',true).maybeSingle()
+  ]);
+  state.session=session; state.settings=settingsResult.data||publicSettings();
+  sb.auth.onAuthStateChange(async (_event,session)=>{state.session=session; await refreshAccountData(false); renderShell();});
+  await refreshAccountData(false);
+  renderShell();
+  await loadBooks(true);
+  hideLoader();
+}
+
+async function ensureProfile(){
+  if(!state.session?.user)return null;
+  const user=state.session.user;
+  const {data:existing,error:readError}=await sb.from('profiles').select('*').eq('id',user.id).maybeSingle();
+  if(readError)throw readError;
+  if(existing){state.profile=existing;return existing}
+  const m=user.user_metadata||{};
+  const location=m.location_json||{};
+  const profile={
+    id:user.id,
+    full_name:String(m.full_name||'').trim(),
+    whatsapp:String(m.whatsapp||'').trim(),
+    division:String(m.division||location.division||'').trim(),
+    district:String(m.district||location.district||'').trim(),
+    upazila:String(m.upazila||location.upazila||'').trim(),
+    union_name:m.union_name||location.union_name||null,
+    pourashava:m.pourashava||location.pourashava||null,
+    address_line:String(m.address_line||'').trim(),
+    postal_code:m.postal_code||null,
+    location_json:location
+  };
+  if(!profile.full_name||!profile.whatsapp||!profile.division||!profile.district||!profile.upazila||!profile.address_line)return null;
+  const {data:created,error}=await sb.from('profiles').upsert(profile,{onConflict:'id'}).select('*').single();
+  if(error)throw error;
+  state.profile=created;
+  return created;
+}
+
+async function refreshAccountData(withLoader=true){
+  if(withLoader)showLoader();
+  try{
+    if(state.session?.user){
+      await ensureProfile();
+      const {data:cart}=await sb.from('cart_items').select('quantity,book:books(*)').eq('user_id',state.session.user.id);
+      state.cart=(cart||[]).map(x=>({book:x.book,quantity:x.quantity}));
+    }else{state.profile=null;state.cart=[]}
+  }finally{if(withLoader)hideLoader()}
+}
+
+async function loadBooks(reset=false,silent=false){
+  if(state.loading) return;
+  if(!state.hasMore && !reset)return;
+  state.loading=true;if(!silent)showLoader();
+  try{
+    if(reset){state.books=[];state.nextOffset=0;state.hasMore=true}
+    let q=sb.from('books').select('*').eq('is_published',true).order('created_at',{ascending:false}).range(state.nextOffset,state.nextOffset+state.pageSize-1);
+    const {data,error}=await q;
+    if(error)throw error;
+    const rows=data||[];
+    state.books=reset?rows:[...state.books,...rows];
+    state.nextOffset += rows.length; state.hasMore=rows.length===state.pageSize;
+    renderHomeBooks();
+  }catch(e){console.error(e);toast(e.message||'Could not load books.')}finally{state.loading=false;if(!silent)hideLoader()}
+}
+
+async function performSearch(term){
+  state.search=term.trim();$('search-clear')?.style.setProperty('display',state.search?'grid':'none');
+  if(!state.search){await loadBooks(true);return}
+  showLoader();
+  try{
+    const {data,error}=await sb.from('books').select('*').eq('is_published',true).ilike('search_text',`%${state.search.toLowerCase()}%`).limit(120);
+    if(error)throw error;
+    const t=state.search.toLowerCase();
+    const scored=(data||[]).map(book=>{
+      const title=(book.title||'').toLowerCase(); const type=`${book.book_type||''} ${book.category||''} ${(book.tags||[]).join(' ')}`.toLowerCase();
+      const rest=(book.search_text||'').toLowerCase();
+      let score=0;if(title===t)score+=1000;else if(title.startsWith(t))score+=800;else if(title.includes(t))score+=600;if(type.includes(t))score+=250;if(rest.includes(t))score+=50;return {book,score}
+    }).sort((a,b)=>b.score-a.score).map(x=>x.book);
+    state.books=scored;state.hasMore=false;renderHomeBooks(true);
+  }catch(e){toast(e.message||'Search failed.')}finally{hideLoader()}
+}
+
+function renderShell(){
+  $('app').innerHTML=`
+    <header class="topbar"><div class="toprow"><div class="brand">TekHaven</div><div class="header-actions"><button class="icon-btn" id="auth-head" aria-label="Account">${state.session?'◉':'○'}</button></div></div>
+      <div class="search-wrap"><input id="search" class="search-input" autocomplete="off" placeholder="Search books, authors, tags, subjects..." value="${esc(state.search)}"><button id="search-clear" class="search-clear">×</button></div>
+    </header>
+    <main id="main" class="content"></main>
+    <nav class="bottom-nav"><div class="nav-inner">
+      <button class="nav-btn ${state.page==='home'?'active':''}" data-nav="home"><span class="nav-icon">⌂</span><span class="nav-label">Home</span></button>
+      <button class="nav-btn ${state.page==='cart'?'active':''}" data-nav="cart"><span class="nav-icon">▢</span><span class="nav-label">Cart</span>${state.cart.length?`<span class="badge">${Math.min(99,state.cart.reduce((a,b)=>a+b.quantity,0))}</span>`:''}</button>
+      <button class="nav-btn ${state.page==='account'?'active':''}" data-nav="account"><span class="nav-icon">◎</span><span class="nav-label">Account</span></button>
+    </div></nav>`;
+  $('search').addEventListener('input',(e)=>{clearTimeout(state.searchTimer);state.searchTimer=setTimeout(()=>performSearch(e.target.value),300)});
+  $('search-clear').addEventListener('click',()=>{ $('search').value=''; performSearch('') });
+  $('auth-head').addEventListener('click',()=>state.session?navigate('account'):showAuth());
+  document.querySelectorAll('[data-nav]').forEach(b=>b.addEventListener('click',()=>navigate(b.dataset.nav)));
+  if(state.page==='home')renderHome();else if(state.page==='cart')renderCart();else renderAccount();
+}
+
+function navigate(page){state.page=page;renderShell();window.scrollTo({top:0,behavior:'smooth'})}
+
+function renderHome(){
+  $('main').innerHTML=`<section class="hero"><h1>Find your next read.</h1><p>Books, comics, manga, science, politics, geography and more, delivered across Bangladesh.</p></section><div id="home-books"></div>`;
+  renderHomeBooks();
+  if(state.search){} else observeInfiniteScroll();
+}
+function renderHomeBooks(searching=false){
+  const host=$('home-books'); if(!host)return;
+  host.innerHTML=`<div class="section-head"><h2>${searching||state.search?'Search results':'Latest books'}</h2><span class="muted">${state.books.length} shown</span></div>`+
+    (state.books.length?`<div class="book-grid">${state.books.map(bookCard).join('')}</div>`:`<div class="empty">No books matched your search.</div>`)+
+    (!state.search&&state.hasMore?'<div class="muted" style="padding:18px;text-align:center">More books are prepared automatically as you scroll.</div>':'');
+  host.querySelectorAll('[data-book]').forEach(el=>el.addEventListener('click',()=>openBook(el.dataset.book)));
+}
+function bookCard(book){return `<article class="book-card" data-book="${book.id}"><div class="cover">${cover(book)}</div><div class="book-body"><div class="book-title">${esc(book.title)}</div><div class="book-meta">${esc(book.author||book.category||book.book_type||'')}</div><div class="book-price">${money(book.price)}</div><div class="pill-row">${(book.tags||[]).slice(0,3).map(t=>`<span class="pill">#${esc(t)}</span>`).join('')}</div></div></article>`}
+function observeInfiniteScroll(){
+  const old=$('scroll-sentinel'); if(old)old.remove(); const s=document.createElement('div');s.id='scroll-sentinel';s.style.height='1px';document.querySelector('.content').appendChild(s);
+  if(window._io)window._io.disconnect();window._io=new IntersectionObserver(es=>{if(es.some(e=>e.isIntersecting))loadBooks(false,true)},{rootMargin:'900px'});window._io.observe(s)
+}
+
+async function openBook(id){
+  showLoader();
+  try{
+    const {data:book,error}=await sb.from('books').select('*').eq('id',id).maybeSingle();if(error)throw error;if(!book)throw new Error('Book not found');state.currentBook=book;
+    let related=[];
+    if(book.category){const r=await sb.from('books').select('*').eq('is_published',true).eq('category',book.category).neq('id',book.id).limit(8);related=r.data||[]}
+    if(related.length<6 && (book.tags||[]).length){const r=await sb.from('books').select('*').eq('is_published',true).overlaps('tags',book.tags).neq('id',book.id).limit(10);related=[...related,...(r.data||[])].filter((v,i,a)=>a.findIndex(x=>x.id===v.id)===i).slice(0,8)}
+    const page=document.createElement('section');page.className='page';page.id='book-page';page.innerHTML=`<div class="page-head"><button class="close-btn" id="book-close">‹</button><h2>Book details</h2><button class="close-btn" id="book-account">◎</button></div><div class="page-body">
+      <div class="detail-cover">${cover(book)}</div><h1 class="detail-title">${esc(book.title)}</h1><div class="detail-author">${esc(book.author||'Author not listed')}</div><div class="price-line">${money(book.price)}</div>
+      <div class="cta-row"><button class="secondary" id="add-cart">Add to cart</button><button class="primary" id="buy-now">Buy now</button></div>
+      <div class="info-card"><h3 style="margin-top:0">About this book</h3><p style="line-height:1.6;white-space:pre-wrap">${esc(book.description||'No description has been added yet.')}</p><div class="pill-row">${(book.tags||[]).map(t=>`<span class="pill">#${esc(t)}</span>`).join('')}</div></div>
+      <div class="info-card">${[['Book type',book.book_type],['Category',book.category],['Language',book.language],['Publisher',book.publisher],['ISBN',book.isbn],['Pages',book.pages],['Edition',book.edition],['Publication year',book.publication_year],['Format',book.format],['Weight',book.weight_grams?book.weight_grams+' g':null],['Stock',book.book_type==='ebook'?'Digital':book.stock]].filter(x=>x[1]!==null&&x[1]!==undefined&&x[1]!=='').map(x=>`<div class="info-row"><div class="info-label">${esc(x[0])}</div><div class="info-val">${esc(x[1])}</div></div>`).join('')}</div>
+      ${related.length?`<div class="section-head"><h2>Related books</h2></div><div class="book-grid">${related.map(bookCard).join('')}</div>`:''}
+    </div>`;document.body.appendChild(page);setTimeout(()=>page.classList.add('open'),10);
+    $('book-close').onclick=()=>closePage('book-page');$('book-account').onclick=()=>{closePage('book-page');setTimeout(()=>navigate('account'),100)};
+    $('add-cart').onclick=()=>addToCart(book);$('buy-now').onclick=()=>buyNow(book);
+    page.querySelectorAll('[data-book]').forEach(el=>el.addEventListener('click',()=>{closePage('book-page');setTimeout(()=>openBook(el.dataset.book),100)}));
+  }catch(e){toast(e.message||'Could not open book.')}finally{hideLoader()}
+}
+
+async function addToCart(book){
+  if(!state.session){showAuth();toast('Sign in to add books to your cart.');return}
+  showLoader();try{
+    const existing=state.cart.find(x=>x.book.id===book.id);const quantity=Math.min(99,(existing?.quantity||0)+1);
+    const {error}=await sb.from('cart_items').upsert({user_id:state.session.user.id,book_id:book.id,quantity},{onConflict:'user_id,book_id'});if(error)throw error;
+    await refreshAccountData(false);renderShell();toast('Added to cart.');
+  }catch(e){toast(e.message||'Could not add to cart.')}finally{hideLoader()}
+}
+function buyNow(book){if(!state.session){showAuth();toast('Sign in before buying.');return}state.cart=[{book,quantity:1}];renderCheckout();}
+
+function showAuth(){
+  if($('auth-page')){openPage('auth-page');return}
+  const page=document.createElement('section');page.id='auth-page';page.className='page';page.innerHTML=`<div class="page-head"><button class="close-btn" id="auth-close">‹</button><h2>Account</h2></div><div class="page-body"><div class="auth-card">
+    <div class="auth-switch"><button id="login-tab" class="${state.authMode==='login'?'selected':''}">Login</button><button id="signup-tab" class="${state.authMode==='signup'?'selected':''}">Sign up</button></div>
+    <form id="auth-form"></form></div></div>`;document.body.appendChild(page);setTimeout(()=>page.classList.add('open'),10);
+  $('auth-close').onclick=()=>closePage('auth-page');$('login-tab').onclick=()=>{state.authMode='login';showAuthForm()};$('signup-tab').onclick=()=>{state.authMode='signup';showAuthForm()};showAuthForm();
+}
+function showAuthForm(){
+  const form=$('auth-form');if(!form)return;
+  if(state.authMode==='login'){form.innerHTML=`<div class="field"><label>Email</label><input id="a-email" type="email" required autocomplete="email"></div><div class="field"><label>Password</label><input id="a-pass" type="password" required autocomplete="current-password"></div><button class="primary" style="width:100%">Login</button><div class="notice">You can explore the store without an account. Purchases and cart access require login.</div>`}
+  else{form.innerHTML=`<div class="field"><label>Full name</label><input id="a-name" required autocomplete="name"></div><div class="field"><label>WhatsApp number</label><input id="a-wa" required inputmode="tel" placeholder="01XXXXXXXXX"></div><div class="field"><label>Email</label><input id="a-email" type="email" required autocomplete="email"></div><div class="field"><label>Password</label><input id="a-pass" type="password" minlength="6" required autocomplete="new-password"></div><div class="field"><label>Division</label><select id="division" required><option value="">Select division</option></select></div><div class="field"><label>District</label><select id="district" required disabled><option value="">Select district</option></select></div><div class="field"><label>Upazila / City</label><select id="upazila" required disabled><option value="">Select upazila</option></select></div><div class="field"><label>Union</label><select id="union" disabled><option value="">Select union</option></select></div><div class="field"><label>Pourashava</label><select id="pourashava" disabled><option value="">Select pourashava</option></select></div><div class="field"><label>Other delivery place / address</label><textarea id="a-address" required placeholder="House, road, village, landmark, etc."></textarea></div><div class="field"><label>Postal code (optional)</label><input id="a-post" inputmode="numeric"></div><button class="primary" style="width:100%">Create account</button>`;setupGeoSelectors()}
+  form.onsubmit=authSubmit;
+}
+async function setupGeoSelectors(){
+  try{
+    if(!state.geo){showLoader();state.geo=await fetch(GEO_URL).then(r=>{if(!r.ok)throw new Error('Could not load Bangladesh locations');return r.json()});hideLoader()}
+    const div=$('division'),dist=$('district'),upa=$('upazila'),uni=$('union'),pou=$('pourashava');
+    div.innerHTML='<option value="">Select division</option>'+state.geo.map(d=>`<option value="${esc(d.name)}">${esc(d.name)} / ${esc(d.bn_name||'')}</option>`).join('');
+    div.onchange=()=>{const d=state.geo.find(x=>x.name===div.value);dist.innerHTML='<option value="">Select district</option>'+(d?.districts||[]).map(x=>`<option value="${esc(x.name)}">${esc(x.name)} / ${esc(x.bn_name||'')}</option>`).join('');dist.disabled=!d;upa.disabled=true;uni.disabled=true;pou.disabled=true};
+    dist.onchange=()=>{const d=state.geo.find(x=>x.name===div.value)?.districts?.find(x=>x.name===dist.value);upa.innerHTML='<option value="">Select upazila</option>'+(d?.upazilas||[]).map(x=>`<option value="${esc(x.name)}">${esc(x.name)} / ${esc(x.bn_name||'')}</option>`).join('');upa.disabled=!d;uni.disabled=true;pou.disabled=true};
+    upa.onchange=()=>{const u=state.geo.find(x=>x.name===div.value)?.districts?.find(x=>x.name===dist.value)?.upazilas?.find(x=>x.name===upa.value);uni.innerHTML='<option value="">Select union</option>'+(u?.unions||[]).map(x=>`<option value="${esc(x.name)}">${esc(x.name)} / ${esc(x.bn_name||'')}</option>`).join('');pou.innerHTML='<option value="">Select pourashava</option>'+(u?.pourashavas||[]).map(x=>`<option value="${esc(x.name)}">${esc(x.name)} / ${esc(x.bn_name||'')}</option>`).join('');uni.disabled=!(u?.unions||[]).length;pou.disabled=!(u?.pourashavas||[]).length};
+  }catch(e){hideLoader();toast(e.message)}
+}
+async function authSubmit(e){e.preventDefault();showLoader();try{
+  const email=$('a-email').value.trim(),password=$('a-pass').value;
+  if(state.authMode==='login'){const {data,error}=await sb.auth.signInWithPassword({email,password});if(error)throw error;state.session=data.session;await refreshAccountData(false);closePage('auth-page');toast('Signed in.');return}
+  const name=$('a-name').value.trim(),wa=$('a-wa').value.trim(),division=$('division').value,district=$('district').value,upazila=$('upazila').value,union_name=$('union').value||null,pourashava=$('pourashava').value||null,address_line=$('a-address').value.trim(),postal_code=$('a-post').value.trim()||null;
+  if(!division||!district||!upazila)throw new Error('Select your Bangladesh delivery location.');
+  const location_json={division,district,upazila,union_name,pourashava};
+  const {data,error}=await sb.auth.signUp({email,password,options:{data:{full_name:name,whatsapp:wa,division,district,upazila,union_name,pourashava,address_line,postal_code,location_json}}});if(error)throw error;
+  if(!data.session){toast('Account created. Check your email to confirm the account, then log in.');state.authMode='login';showAuthForm()}else{state.session=data.session;await refreshAccountData(false);toast('Account created.');closePage('auth-page')}
+}catch(e){toast(e.message||'Authentication failed.')}finally{hideLoader()}}
+
+function renderCart(){
+  const main=$('main');
+  if(!state.session){main.innerHTML=`<div class="auth-card"><h2>Your cart</h2><p>Sign in to add books, keep your cart synced, and place orders.</p><button class="primary" style="width:100%" id="cart-login">Login / Sign up</button></div>`;$('cart-login').onclick=showAuth;return}
+  if(!state.cart.length){main.innerHTML='<div class="empty" style="margin-top:40px"><h2>Your cart is empty.</h2><p>Explore the catalog and add your next read.</p><button class="primary" id="cart-home">Browse books</button></div>';$("cart-home").onclick=()=>navigate('home');return}
+  main.innerHTML=`<div class="section-head"><h2>Your cart</h2><span class="muted">${state.cart.reduce((a,b)=>a+b.quantity,0)} items</span></div><div>${state.cart.map(cartItem).join('')}</div><div class="cart-summary"><div class="sumrow"><span>Subtotal</span><strong>${money(cartSubtotal())}</strong></div><button class="primary" style="width:100%" id="checkout">Continue to checkout</button></div>`;
+  main.querySelectorAll('[data-cart-action]').forEach(b=>b.onclick=()=>cartAction(b.dataset.cartAction,b.dataset.book));$('checkout').onclick=renderCheckout;
+}
+function cartItem(x){return `<div class="cart-item"><div class="cart-cover">${cover(x.book)}</div><div><div class="book-title">${esc(x.book.title)}</div><div class="muted">${money(x.book.price)}</div><div class="qty"><button data-cart-action="minus" data-book="${x.book.id}">−</button><span>${x.quantity}</span><button data-cart-action="plus" data-book="${x.book.id}">+</button><button style="margin-left:auto;background:var(--c2);padding:7px 10px;border-radius:10px" data-cart-action="remove" data-book="${x.book.id}">Remove</button></div></div></div>`}
+function cartSubtotal(){return state.cart.reduce((a,x)=>a+(Number(x.book.price)||0)*x.quantity,0)}
+async function cartAction(action,bookId){const item=state.cart.find(x=>x.book.id===bookId);if(!item)return;let q=item.quantity;if(action==='plus')q++;if(action==='minus')q--;if(action==='remove')q=0;showLoader();try{if(q<=0){const {error}=await sb.from('cart_items').delete().eq('user_id',state.session.user.id).eq('book_id',bookId);if(error)throw error}else{const {error}=await sb.from('cart_items').update({quantity:q}).eq('user_id',state.session.user.id).eq('book_id',bookId);if(error)throw error}await refreshAccountData(false);renderCart()}catch(e){toast(e.message)}finally{hideLoader()}}
+
+async function renderCheckout(){
+  if(!state.session){showAuth();return}
+  try{await ensureProfile()}catch(e){toast(e.message||'Could not load your account.');return}
+  if(!state.profile){showAuth();toast('Please complete your account and delivery address first.');return}
+  if(!state.cart.length){toast('Your cart is empty.');navigate('cart');return}
+  const s=publicSettings();const shipping=cartSubtotal()>=Number(s.free_shipping_threshold||2000)?0:Number(s.shipping_fee||0);const total=cartSubtotal()+shipping;
+  const page=document.createElement('section');page.id='checkout-page';page.className='page';page.innerHTML=`<div class="page-head"><button class="close-btn" id="checkout-close">‹</button><h2>Checkout</h2></div><div class="page-body"><form id="checkout-form">
+    <div class="info-card"><h3>Delivery details</h3><div class="info-row"><div class="info-label">Name</div><div class="info-val">${esc(state.profile?.full_name||'')}</div></div><div class="info-row"><div class="info-label">WhatsApp</div><div class="info-val">${esc(state.profile?.whatsapp||'')}</div></div><div class="info-row"><div class="info-label">Location</div><div class="info-val">${esc([state.profile?.division,state.profile?.district,state.profile?.upazila,state.profile?.union_name||state.profile?.pourashava].filter(Boolean).join(', '))}</div></div><div class="info-row"><div class="info-label">Address</div><div class="info-val">${esc(state.profile?.address_line||'')}</div></div></div>
+    <div class="info-card"><h3>Payment</h3>${[['cod',s.cod_enabled,'Cash on delivery'],['bkash',s.bkash_enabled,`bKash${s.bkash_number?' • '+esc(s.bkash_number):''}`],['nagad',s.nagad_enabled,`Nagad${s.nagad_number?' • '+esc(s.nagad_number):''}`],['card',s.card_enabled,'Card']].filter(x=>x[1]).map((x,i)=>`<label style="display:flex;align-items:center;gap:9px;padding:12px;border:1px solid var(--c2);border-radius:13px;margin:8px 0"><input type="radio" name="payment" value="${x[0]}" ${i===0?'checked':''}> <span>${x[2]}</span></label>`).join('')}<div class="notice">For bKash/Nagad/card, enter your transaction/reference number below unless the live gateway has been connected. Never enter a PIN, OTP or full card number into TekHaven.</div><div class="field"><label>Payment transaction/reference (required for digital payments)</label><input id="payment-ref" maxlength="120"></div></div>
+    <div class="info-card"><h3>Order note</h3><div class="field"><textarea id="order-note" maxlength="1000" placeholder="Optional note for delivery"></textarea></div></div>
+    <div class="info-card"><div class="sumrow"><span>Subtotal</span><strong>${money(cartSubtotal())}</strong></div><div class="sumrow"><span>Shipping</span><strong>${shipping?money(shipping):'Free'}</strong></div><div class="sumrow total"><span>Total</span><strong>${money(total)}</strong></div><button class="primary" style="width:100%">Confirm order</button></div>
+  </form></div>`;document.body.appendChild(page);setTimeout(()=>page.classList.add('open'),10);$('checkout-close').onclick=()=>closePage('checkout-page');$('checkout-form').onsubmit=submitOrder;
+}
+async function submitOrder(e){e.preventDefault();const method=new FormData(e.target).get('payment');const ref=$('payment-ref').value.trim();if(method!=='cod'&&!ref){toast('Add the transaction/reference number.');return}showLoader();try{const res=await fetch(`${SUPABASE_URL}/functions/v1/create-order`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${(await sb.auth.getSession()).data.session.access_token}`},body:JSON.stringify({items:state.cart.map(x=>({book_id:x.book.id,quantity:x.quantity})),payment_method:method,payment_reference:ref||null,customer_note:$('order-note').value.trim()||null})});const json=await res.json();if(!res.ok)throw new Error(json.error||'Could not place order.');await refreshAccountData(false);closePage('checkout-page');renderAccount();toast(`Order ${String(json.order_id).slice(0,8)} placed.`)}catch(e){toast(e.message)}finally{hideLoader()}}
+
+async function renderAccount(){
+  const main=$('main');
+  if(!state.session){main.innerHTML=`<div class="auth-card"><h2>Your TekHaven account</h2><p>Create an account with your Bangladesh delivery location, or log in to see your orders.</p><button class="primary" id="account-login" style="width:100%">Login / Sign up</button></div><div class="menu-card"><button class="menu-item" id="privacy-guest">Privacy policy <span>›</span></button><button class="menu-item" id="terms-guest">Terms of service <span>›</span></button><div class="menu-item" style="font-size:13px">Help: tsntmc1020@gmail.com</div></div>`;$('account-login').onclick=showAuth;$('privacy-guest').onclick=()=>openLegal('Privacy policy',publicSettings().privacy_policy);$('terms-guest').onclick=()=>openLegal('Terms of service',publicSettings().terms_of_service);return}
+  showLoader();try{const {data:orders}=await sb.from('orders').select('*').eq('user_id',state.session.user.id).order('created_at',{ascending:false}).limit(30);main.innerHTML=`<div class="account-head"><div class="avatar">${initials(state.profile?.full_name)}</div><div><div style="font-size:18px;font-weight:900">${esc(state.profile?.full_name||'TekHaven user')}</div><div class="muted">${esc(state.session.user.email||'')}</div></div></div><div class="menu-card"><button class="menu-item" id="edit-profile">Edit account & delivery <span>›</span></button><button class="menu-item" id="privacy">Privacy policy <span>›</span></button><button class="menu-item" id="terms">Terms of service <span>›</span></button><div class="menu-item" style="font-size:13px">Contact/help: tsntmc1020@gmail.com</div><button class="menu-item" id="logout">Log out <span>›</span></button></div><div class="section-head"><h2>Your orders</h2><span class="muted">${(orders||[]).length}</span></div>${(orders||[]).length?(orders||[]).map(orderCard).join(''):'<div class="empty">No orders yet.</div>'}`;$('edit-profile').onclick=editProfile;$('privacy').onclick=()=>openLegal('Privacy policy',state.settings?.privacy_policy||'');$('terms').onclick=()=>openLegal('Terms of service',state.settings?.terms_of_service||'');$('logout').onclick=logout}catch(e){toast(e.message)}finally{hideLoader()}}
+function orderCard(o){return `<div class="order-card"><div class="order-top"><div><strong>#${esc(String(o.id).slice(0,8))}</strong><div class="muted">${new Date(o.created_at).toLocaleString()}</div></div><span class="order-status">${esc(o.status)}</span></div><div style="margin-top:10px">${money(o.total_amount)} • ${esc(o.payment_method.toUpperCase())}</div>${o.pathao_consignment_id?`<div class="muted" style="margin-top:6px">Pathao: ${esc(o.pathao_consignment_id)}${o.pathao_status?' • '+esc(o.pathao_status):''}</div>`:''}${o.payment_reference?`<div class="muted" style="margin-top:6px">Payment ref: ${esc(o.payment_reference)}</div>`:''}</div>`}
+async function logout(){showLoader();try{await sb.auth.signOut();state.session=null;state.profile=null;state.cart=[];navigate('home');toast('Signed out.')}finally{hideLoader()}}
+function editProfile(){
+  const p=state.profile||{};const page=document.createElement('section');page.id='profile-page';page.className='page';page.innerHTML=`<div class="page-head"><button class="close-btn" id="profile-close">‹</button><h2>Edit account</h2></div><div class="page-body"><form id="profile-form"><div class="field"><label>Full name</label><input id="p-name" required value="${esc(p.full_name||'')}"></div><div class="field"><label>WhatsApp number</label><input id="p-wa" required value="${esc(p.whatsapp||'')}"></div><div class="field"><label>Other delivery place / address</label><textarea id="p-address" required>${esc(p.address_line||'')}</textarea></div><div class="field"><label>Postal code</label><input id="p-post" value="${esc(p.postal_code||'')}"></div><div class="notice">The original Division / District / Upazila values are stored with your account snapshot. For a major location change, use the same hierarchy in your next support request so order history remains clear.</div><button class="primary" style="width:100%">Save changes</button></form></div>`;document.body.appendChild(page);setTimeout(()=>page.classList.add('open'),10);$('profile-close').onclick=()=>closePage('profile-page');$('profile-form').onsubmit=async(e)=>{e.preventDefault();showLoader();try{const {data:existing}=await sb.from('profiles').select('division,district,upazila,union_name,pourashava,location_json').eq('id',state.session.user.id).maybeSingle();const meta=state.session.user.user_metadata||{};const loc=existing?.location_json||meta.location_json||{};const division=existing?.division||meta.division||loc.division||'';const district=existing?.district||meta.district||loc.district||'';const upazila=existing?.upazila||meta.upazila||loc.upazila||'';if(!division||!district||!upazila)throw new Error('Your delivery location is incomplete. Please create your account again with the full Bangladesh delivery location.');const {error}=await sb.from('profiles').upsert({id:state.session.user.id,full_name:$('p-name').value.trim(),whatsapp:$('p-wa').value.trim(),division,district,upazila,union_name:existing?.union_name??meta.union_name??loc.union_name??null,pourashava:existing?.pourashava??meta.pourashava??loc.pourashava??null,address_line:$('p-address').value.trim(),postal_code:$('p-post').value.trim()||null,location_json:loc},{onConflict:'id'});if(error)throw error;await refreshAccountData(false);closePage('profile-page');renderAccount();toast('Account updated.')}catch(err){toast(err.message)}finally{hideLoader()}}}
+function openLegal(title,body){const page=document.createElement('section');page.id='legal-page';page.className='page';page.innerHTML=`<div class="page-head"><button class="close-btn" id="legal-close">‹</button><h2>${esc(title)}</h2></div><div class="page-body"><div class="info-card"><div style="line-height:1.7;white-space:pre-wrap">${esc(body||'Legal text will be added by the store owner in Supabase Store Settings.')}</div><p class="muted" style="margin-bottom:0">Contact: tsntmc1020@gmail.com</p></div></div>`;document.body.appendChild(page);setTimeout(()=>page.classList.add('open'),10);$('legal-close').onclick=()=>closePage('legal-page')}
+
+boot();
+</script>
+</body>
+</html>
